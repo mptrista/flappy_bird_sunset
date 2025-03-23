@@ -1,8 +1,12 @@
 import * as THREE from 'three';
 
 // Game version
-const GAME_VERSION = '1.0.7'; // Added start dialog and initial pause
+const GAME_VERSION = '1.0.8'; // Fixed initialization order and device detection
 console.log(`Flappy Bird - Sunset Edition v${GAME_VERSION}`);
+
+// Add device detection before any other game logic
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+console.log(`Running on ${isMobile ? 'mobile' : 'desktop'} device`);
 
 // Add CSS styles for game text
 const style = document.createElement('style');
@@ -69,10 +73,6 @@ versionElement.textContent = `v${GAME_VERSION}`;
 document.body.appendChild(versionElement);
 
 console.log('Script started');
-
-// Add device detection before any other game logic
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-console.log(`Running on ${isMobile ? 'mobile' : 'desktop'} device`);
 
 // Game appearance constants
 const GAME_APPEARANCE = {
@@ -310,10 +310,10 @@ function init() {
         window.addEventListener('touchstart', onTouch, { passive: false });
         window.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
         window.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });
-        
-        // Force an initial resize to ensure correct layout
-        onWindowResize();
     }
+    
+    // Force an initial resize to ensure correct layout
+    onWindowResize();
     
     // Update score display
     updateScoreDisplay();
