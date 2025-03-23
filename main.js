@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 // Game version
-const GAME_VERSION = '1.0.4'; // Incremented for mobile fix
+const GAME_VERSION = '1.0.5'; // Incremented for background and camera fixes
 console.log(`Flappy Bird - Sunset Edition v${GAME_VERSION}`);
 
 // Add CSS styles for game text
@@ -155,7 +155,7 @@ function createBird() {
 }
 
 function createBackground() {
-    // Create gradient background
+    // Create gradient background with dynamic sizing
     const vertexShader = `
         varying vec2 vUv;
         void main() {
@@ -173,7 +173,10 @@ function createBackground() {
         }
     `;
 
-    const bgGeometry = new THREE.PlaneGeometry(40, 20);
+    // Increase background size for better coverage
+    const bgWidth = isMobile ? 60 : 40;  // Wider for mobile
+    const bgHeight = isMobile ? 30 : 20; // Taller for mobile
+    const bgGeometry = new THREE.PlaneGeometry(bgWidth, bgHeight);
     const bgMaterial = new THREE.ShaderMaterial({
         uniforms: {
             colorTop: { value: new THREE.Color(GAME_APPEARANCE.COLORS.SKY_TOP) },
@@ -186,18 +189,21 @@ function createBackground() {
     background.position.z = -5;
     scene.add(background);
 
-    // Create back mountains
+    // Adjust mountain shapes for wider coverage
+    const mountainWidth = isMobile ? 30 : 20;
+    
+    // Create back mountains with wider coverage
     const backMountainShape = new THREE.Shape();
-    backMountainShape.moveTo(-20, -10);
-    backMountainShape.lineTo(-15, -2);
-    backMountainShape.lineTo(-10, -5);
-    backMountainShape.lineTo(-5, 0);
+    backMountainShape.moveTo(-mountainWidth, -10);
+    backMountainShape.lineTo(-mountainWidth * 0.75, -2);
+    backMountainShape.lineTo(-mountainWidth * 0.5, -5);
+    backMountainShape.lineTo(-mountainWidth * 0.25, 0);
     backMountainShape.lineTo(0, -3);
-    backMountainShape.lineTo(5, 1);
-    backMountainShape.lineTo(10, -2);
-    backMountainShape.lineTo(15, -1);
-    backMountainShape.lineTo(20, -4);
-    backMountainShape.lineTo(20, -10);
+    backMountainShape.lineTo(mountainWidth * 0.25, 1);
+    backMountainShape.lineTo(mountainWidth * 0.5, -2);
+    backMountainShape.lineTo(mountainWidth * 0.75, -1);
+    backMountainShape.lineTo(mountainWidth, -4);
+    backMountainShape.lineTo(mountainWidth, -10);
     
     const backMountains = new THREE.Mesh(
         new THREE.ShapeGeometry(backMountainShape),
@@ -206,19 +212,19 @@ function createBackground() {
     backMountains.position.z = -4;
     scene.add(backMountains);
 
-    // Create front mountains
+    // Create front mountains with wider coverage
     const frontMountainShape = new THREE.Shape();
-    frontMountainShape.moveTo(-20, -10);
-    frontMountainShape.lineTo(-17, -1);
-    frontMountainShape.lineTo(-12, -4);
-    frontMountainShape.lineTo(-7, 0);
-    frontMountainShape.lineTo(-2, -3);
-    frontMountainShape.lineTo(3, -1);
-    frontMountainShape.lineTo(8, -4);
-    frontMountainShape.lineTo(13, -2);
-    frontMountainShape.lineTo(18, -5);
-    frontMountainShape.lineTo(20, -3);
-    frontMountainShape.lineTo(20, -10);
+    frontMountainShape.moveTo(-mountainWidth, -10);
+    frontMountainShape.lineTo(-mountainWidth * 0.85, -1);
+    frontMountainShape.lineTo(-mountainWidth * 0.6, -4);
+    frontMountainShape.lineTo(-mountainWidth * 0.35, 0);
+    frontMountainShape.lineTo(-mountainWidth * 0.1, -3);
+    frontMountainShape.lineTo(mountainWidth * 0.15, -1);
+    frontMountainShape.lineTo(mountainWidth * 0.4, -4);
+    frontMountainShape.lineTo(mountainWidth * 0.65, -2);
+    frontMountainShape.lineTo(mountainWidth * 0.9, -5);
+    frontMountainShape.lineTo(mountainWidth, -3);
+    frontMountainShape.lineTo(mountainWidth, -10);
 
     const frontMountains = new THREE.Mesh(
         new THREE.ShapeGeometry(frontMountainShape),
@@ -237,13 +243,21 @@ function init() {
     
     // Create camera with responsive FOV
     const aspectRatio = window.innerWidth / window.innerHeight;
-    const fov = isMobile ? 90 : 60; // Wider FOV for mobile
+    const isPortrait = window.innerHeight > window.innerWidth;
+    
+    // Adjust FOV based on device and orientation
+    let fov;
+    if (isMobile) {
+        fov = isPortrait ? 100 : 80;
+    } else {
+        fov = 60;
+    }
+    
     camera = new THREE.PerspectiveCamera(fov, aspectRatio, 0.1, 1000);
     
     // Adjust camera position based on screen size and orientation
     if (isMobile) {
-        const isPortrait = window.innerHeight > window.innerWidth;
-        camera.position.z = isPortrait ? 12 : 8;
+        camera.position.z = isPortrait ? 14 : 10;
         console.log(`Mobile camera position set to ${camera.position.z} (${isPortrait ? 'portrait' : 'landscape'})`);
     } else {
         camera.position.z = 12;
@@ -364,13 +378,24 @@ function onWindowResize() {
     const width = window.innerWidth;
     const height = window.innerHeight;
     const aspectRatio = width / height;
+    const isPortrait = height > width;
     
     camera.aspect = aspectRatio;
     
     if (isMobile) {
-        const isPortrait = height > width;
-        camera.position.z = isPortrait ? 12 : 8;
-        camera.fov = isPortrait ? 90 : 75;
+        // Adjust FOV and camera position based on orientation
+        camera.fov = isPortrait ? 100 : 80;
+        camera.position.z = isPortrait ? 14 : 10;
+        
+        // Adjust pipe visibility range
+        const pipeVisibilityAdjustment = isPortrait ? 15 : 20;
+        pipes.forEach(pipe => {
+            if (pipe.top.position.x < -pipeVisibilityAdjustment) {
+                scene.remove(pipe.top);
+                scene.remove(pipe.bottom);
+                pipes = pipes.filter(p => p !== pipe);
+            }
+        });
     }
     
     camera.updateProjectionMatrix();
