@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 
+// Game version
+const GAME_VERSION = '1.0.3'; // Incremented with each significant update
+console.log(`Flappy Bird - Sunset Edition v${GAME_VERSION}`);
+
 // Add CSS styles for game text
 const style = document.createElement('style');
 style.textContent = `
-    #score, #gameOver {
+    #score, #gameOver, #version {
         position: fixed;
-        left: 50%;
-        transform: translateX(-50%);
         color: #E8E8E8;
         font-family: Arial, sans-serif;
         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
@@ -15,11 +17,14 @@ style.textContent = `
     }
     #score {
         top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
         font-size: 24px;
         font-weight: bold;
     }
     #gameOver {
         top: 50%;
+        left: 50%;
         transform: translate(-50%, -50%);
         font-size: 32px;
         font-weight: bold;
@@ -29,10 +34,16 @@ style.textContent = `
         padding: 20px;
         border-radius: 10px;
     }
+    #version {
+        bottom: env(safe-area-inset-bottom, 10px);
+        right: env(safe-area-inset-right, 10px);
+        font-size: 12px;
+        opacity: 0.7;
+    }
 `;
 document.head.appendChild(style);
 
-// Create score and game over elements
+// Create UI elements
 const scoreElement = document.createElement('div');
 scoreElement.id = 'score';
 document.body.appendChild(scoreElement);
@@ -40,6 +51,11 @@ document.body.appendChild(scoreElement);
 const gameOverElement = document.createElement('div');
 gameOverElement.id = 'gameOver';
 document.body.appendChild(gameOverElement);
+
+const versionElement = document.createElement('div');
+versionElement.id = 'version';
+versionElement.textContent = `v${GAME_VERSION}`;
+document.body.appendChild(versionElement);
 
 console.log('Script started');
 
@@ -62,7 +78,7 @@ const BIRD_CONSTANTS = {
         y: GAME_APPEARANCE.BIRD_SIZE
     },
     SPRITE_POSITION: {
-        x: -4,
+        x: isMobile ? -2 : -4, // Move bird more to center on mobile
         y: 0,
         z: 0
     },
@@ -228,9 +244,9 @@ function init() {
     
     // Create camera with responsive FOV
     const aspectRatio = window.innerWidth / window.innerHeight;
-    const fov = isMobile ? 75 : 60; // Wider FOV for mobile
+    const fov = isMobile ? 85 : 60; // Even wider FOV for mobile
     camera = new THREE.PerspectiveCamera(fov, aspectRatio, 0.1, 1000);
-    camera.position.set(0, 0, isMobile ? 14 : 12); // Move camera back on mobile
+    camera.position.set(0, 0, isMobile ? 10 : 12); // Adjust mobile camera distance
     camera.lookAt(0, 0, 0);
 
     // Create renderer
@@ -259,9 +275,9 @@ function init() {
     
     // Add touch events for mobile
     if (isMobile) {
-        window.addEventListener('touchstart', onTouch);
-        // Prevent default touch behaviors
+        document.addEventListener('touchstart', onTouch, { passive: false });
         document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+        document.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });
     }
     
     // Update score display
@@ -344,22 +360,22 @@ function onWindowResize() {
 // Handle touch events
 function onTouch(event) {
     event.preventDefault();
-    if (!isGameOver) {
-        velocity = 0.15;
-        bird.rotation.z = Math.PI / 2;
+    if (isGameOver) {
+        resetGame();
+    } else {
+        velocity = 0.12; // Slightly reduced jump height for better mobile control
+        bird.rotation.z = Math.PI / 4; // Reduced rotation angle
         if (!isFlapping) {
             flapWings();
         }
-    } else {
-        resetGame();
     }
 }
 
 // Create a pair of pipes with adjusted gap for mobile
 function createPipes() {
     const baseGap = 5;
-    const gap = isMobile ? baseGap * 1.2 : baseGap; // 20% larger gap on mobile
-    const gapPosition = Math.random() * 6 - 3;
+    const gap = isMobile ? baseGap * 1.4 : baseGap; // 40% larger gap on mobile
+    const gapPosition = Math.random() * 4 - 2; // Reduced range for more centered pipes
 
     // Create top pipe
     const topPipeGeometry = new THREE.BoxGeometry(1, 10, 1);
