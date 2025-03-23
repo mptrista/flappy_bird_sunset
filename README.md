@@ -1,6 +1,6 @@
 # 🌅 Flappy Bird - Sunset Edition
 
-A beautiful reimagining of the classic Flappy Bird game, set against a serene sunset backdrop with mountain silhouettes. Built with Three.js for smooth 3D graphics and animations.
+A beautiful reimagining of the classic Flappy Bird game, set against a serene sunset backdrop with mountain silhouettes. Built with Three.js for smooth 3D graphics and animations. Enhanced with AI assistance using Claude 3.5 Sonnet.
 
 [Play the Game](https://mptrista.github.io/flappy_bird_sunset)
 
@@ -23,9 +23,13 @@ A beautiful reimagining of the classic Flappy Bird game, set against a serene su
   - Level system with increasing challenge
   - Forgiving collision detection
 
+- **Adaptive Display**
+  - Supports both portrait and landscape orientations
+
 ## 🕹️ How to Play
 
-- Press **SPACEBAR** to make the bird flap its wings
+- **Desktop**: Press **SPACEBAR** to make the bird flap its wings
+- **Mobile**: Tap anywhere on the screen to flap
 - Navigate through the gaps between pipes
 - Each successful pass scores a point
 - Every 10 points advances you to the next level
@@ -59,13 +63,17 @@ Visit [https://mptrista.github.io/flappy_bird_sunset](https://mptrista.github.io
 - [Three.js](https://threejs.org/) - 3D Graphics Library
 - HTML5 Canvas
 - Modern JavaScript (ES6+)
+- AI Assistance - Claude 3.5 Sonnet
 
 ## 📱 Browser Support
 
-- Chrome (recommended)
-- Firefox
-- Safari
-- Edge
+- **Desktop**: Full support with keyboard controls
+- **Mobile**: 
+  - Optimized for both portrait and landscape orientations
+  - Touch controls
+  - Responsive design
+  - Adjusted gameplay for better mobile experience
+  - Supports iOS and Android devices
 
 ## 🤝 Contributing
 
@@ -82,4 +90,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Original Flappy Bird game by Dong Nguyen
 - Three.js community for the excellent 3D graphics library
-- Mountain silhouette design inspiration from various sunset landscapes 
+- Mountain silhouette design inspiration from various sunset landscapes
+- Claude 3.5 Sonnet for AI assistance in development
+- Inspiration from the classic game's simplicity and challenge 

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 // Game version
-const GAME_VERSION = '1.0.5'; // Incremented for background and camera fixes
+const GAME_VERSION = '1.0.6'; // Updated README with AI assistance and mobile support info
 console.log(`Flappy Bird - Sunset Edition v${GAME_VERSION}`);
 
 // Add CSS styles for game text
