@@ -76,6 +76,17 @@ const BIRD_CONSTANTS = {
     }
 };
 
+// Add device detection
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+// Adjust game constants for mobile
+if (isMobile) {
+    // Make bird slightly larger on mobile
+    GAME_APPEARANCE.BIRD_SIZE = 1.2;
+    // Adjust pipe gap for easier mobile play
+    const MOBILE_GAP_MULTIPLIER = 1.2;
+}
+
 // Game variables
 let scene, camera, renderer, bird;
 let birdSprites = []; // Array to hold the three bird sprite states
@@ -215,9 +226,11 @@ function init() {
     // Create scene
     scene = new THREE.Scene();
     
-    // Create camera with wider view
-    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 0, 12);
+    // Create camera with responsive FOV
+    const aspectRatio = window.innerWidth / window.innerHeight;
+    const fov = isMobile ? 75 : 60; // Wider FOV for mobile
+    camera = new THREE.PerspectiveCamera(fov, aspectRatio, 0.1, 1000);
+    camera.position.set(0, 0, isMobile ? 14 : 12); // Move camera back on mobile
     camera.lookAt(0, 0, 0);
 
     // Create renderer
@@ -243,6 +256,13 @@ function init() {
     // Event listeners
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('resize', onWindowResize);
+    
+    // Add touch events for mobile
+    if (isMobile) {
+        window.addEventListener('touchstart', onTouch);
+        // Prevent default touch behaviors
+        document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+    }
     
     // Update score display
     updateScoreDisplay();
@@ -321,23 +341,38 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// Create a pair of pipes
+// Handle touch events
+function onTouch(event) {
+    event.preventDefault();
+    if (!isGameOver) {
+        velocity = 0.15;
+        bird.rotation.z = Math.PI / 2;
+        if (!isFlapping) {
+            flapWings();
+        }
+    } else {
+        resetGame();
+    }
+}
+
+// Create a pair of pipes with adjusted gap for mobile
 function createPipes() {
-    const gap = 5;
+    const baseGap = 5;
+    const gap = isMobile ? baseGap * 1.2 : baseGap; // 20% larger gap on mobile
     const gapPosition = Math.random() * 6 - 3;
 
     // Create top pipe
     const topPipeGeometry = new THREE.BoxGeometry(1, 10, 1);
     const pipeMaterial = new THREE.MeshPhongMaterial({ color: 0x98D8B1 });
     const topPipe = new THREE.Mesh(topPipeGeometry, pipeMaterial);
-    topPipe.position.set(15, gapPosition + gap/2 + 5, 0); // Start pipes further right
+    topPipe.position.set(15, gapPosition + gap/2 + 5, 0);
     topPipe.castShadow = true;
     scene.add(topPipe);
 
     // Create bottom pipe
     const bottomPipeGeometry = new THREE.BoxGeometry(1, 10, 1);
     const bottomPipe = new THREE.Mesh(bottomPipeGeometry, pipeMaterial);
-    bottomPipe.position.set(15, gapPosition - gap/2 - 5, 0); // Start pipes further right
+    bottomPipe.position.set(15, gapPosition - gap/2 - 5, 0);
     bottomPipe.castShadow = true;
     scene.add(bottomPipe);
 

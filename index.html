@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Flappy Bird - Sunset Edition</title>
     <style>
         body {
@@ -14,9 +16,27 @@
             width: 100vw;
             height: 100vh;
             background-color: #2c3e50;
+            touch-action: none; /* Prevents default touch behaviors */
         }
         canvas {
             display: block;
+            touch-action: none;
+        }
+        #mobileControls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #E8E8E8;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        @media (max-width: 768px) {
+            #mobileControls {
+                opacity: 1;
+            }
         }
     </style>
 </head>
@@ -29,6 +49,7 @@
             }
         }
     </script>
+    <div id="mobileControls">Tap anywhere to flap!</div>
     <script type="module" src="main.js"></script>
 </body>
 </html> 
