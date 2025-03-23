@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 // Game version
-const GAME_VERSION = '1.0.3'; // Incremented with each significant update
+const GAME_VERSION = '1.0.4'; // Incremented for mobile fix
 console.log(`Flappy Bird - Sunset Edition v${GAME_VERSION}`);
 
 // Add CSS styles for game text
@@ -59,9 +59,13 @@ document.body.appendChild(versionElement);
 
 console.log('Script started');
 
+// Add device detection before any other game logic
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+console.log(`Running on ${isMobile ? 'mobile' : 'desktop'} device`);
+
 // Game appearance constants
 const GAME_APPEARANCE = {
-    BIRD_SIZE: 1  ,
+    BIRD_SIZE: isMobile ? 1.2 : 1,  // Immediately set correct bird size based on device
     COLORS: {
         SKY_TOP: 0xFF6B6B,    // Pinkish orange for sunset
         SKY_BOTTOM: 0x4A90E2,  // Deep blue for bottom
@@ -78,7 +82,7 @@ const BIRD_CONSTANTS = {
         y: GAME_APPEARANCE.BIRD_SIZE
     },
     SPRITE_POSITION: {
-        x: isMobile ? -2 : -4, // Move bird more to center on mobile
+        x: isMobile ? -2 : -4,
         y: 0,
         z: 0
     },
@@ -91,17 +95,6 @@ const BIRD_CONSTANTS = {
         DOWN: 2
     }
 };
-
-// Add device detection
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-// Adjust game constants for mobile
-if (isMobile) {
-    // Make bird slightly larger on mobile
-    GAME_APPEARANCE.BIRD_SIZE = 1.2;
-    // Adjust pipe gap for easier mobile play
-    const MOBILE_GAP_MULTIPLIER = 1.2;
-}
 
 // Game variables
 let scene, camera, renderer, bird;
@@ -244,13 +237,26 @@ function init() {
     
     // Create camera with responsive FOV
     const aspectRatio = window.innerWidth / window.innerHeight;
-    const fov = isMobile ? 85 : 60; // Even wider FOV for mobile
+    const fov = isMobile ? 90 : 60; // Wider FOV for mobile
     camera = new THREE.PerspectiveCamera(fov, aspectRatio, 0.1, 1000);
-    camera.position.set(0, 0, isMobile ? 10 : 12); // Adjust mobile camera distance
+    
+    // Adjust camera position based on screen size and orientation
+    if (isMobile) {
+        const isPortrait = window.innerHeight > window.innerWidth;
+        camera.position.z = isPortrait ? 12 : 8;
+        console.log(`Mobile camera position set to ${camera.position.z} (${isPortrait ? 'portrait' : 'landscape'})`);
+    } else {
+        camera.position.z = 12;
+    }
+    
     camera.lookAt(0, 0, 0);
 
-    // Create renderer
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    // Create renderer with pixel ratio consideration
+    renderer = new THREE.WebGLRenderer({ 
+        antialias: true,
+        powerPreference: "high-performance"
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio for performance
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
@@ -275,9 +281,12 @@ function init() {
     
     // Add touch events for mobile
     if (isMobile) {
-        document.addEventListener('touchstart', onTouch, { passive: false });
-        document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-        document.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });
+        window.addEventListener('touchstart', onTouch, { passive: false });
+        window.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+        window.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });
+        
+        // Force an initial resize to ensure correct layout
+        onWindowResize();
     }
     
     // Update score display
@@ -352,9 +361,21 @@ function onKeyDown(event) {
 
 // Handle window resize
 function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const aspectRatio = width / height;
+    
+    camera.aspect = aspectRatio;
+    
+    if (isMobile) {
+        const isPortrait = height > width;
+        camera.position.z = isPortrait ? 12 : 8;
+        camera.fov = isPortrait ? 90 : 75;
+    }
+    
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(width, height);
+    console.log(`Resized to ${width}x${height}, FOV: ${camera.fov}, Z: ${camera.position.z}`);
 }
 
 // Handle touch events
