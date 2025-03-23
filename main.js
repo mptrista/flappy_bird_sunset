@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 
 // Game version
-const GAME_VERSION = '1.0.6'; // Updated README with AI assistance and mobile support info
+const GAME_VERSION = '1.0.7'; // Added start dialog and initial pause
 console.log(`Flappy Bird - Sunset Edition v${GAME_VERSION}`);
 
 // Add CSS styles for game text
 const style = document.createElement('style');
 style.textContent = `
-    #score, #gameOver, #version {
+    #score, #gameOver, #version, #startDialog {
         position: fixed;
         color: #E8E8E8;
         font-family: Arial, sans-serif;
@@ -21,18 +21,22 @@ style.textContent = `
         transform: translateX(-50%);
         font-size: 24px;
         font-weight: bold;
+        opacity: 0;
+        transition: opacity 0.3s;
     }
-    #gameOver {
+    #gameOver, #startDialog {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
         font-size: 32px;
         font-weight: bold;
-        display: none;
         white-space: pre-line;
         background-color: rgba(0, 0, 0, 0.6);
         padding: 20px;
         border-radius: 10px;
+    }
+    #gameOver {
+        display: none;
     }
     #version {
         bottom: env(safe-area-inset-bottom, 10px);
@@ -51,6 +55,13 @@ document.body.appendChild(scoreElement);
 const gameOverElement = document.createElement('div');
 gameOverElement.id = 'gameOver';
 document.body.appendChild(gameOverElement);
+
+const startDialogElement = document.createElement('div');
+startDialogElement.id = 'startDialog';
+startDialogElement.textContent = isMobile ? 
+    'Tap to Start\n\nTap anywhere to flap!' :
+    'Press SPACE to Start\n\nUse SPACEBAR to flap!';
+document.body.appendChild(startDialogElement);
 
 const versionElement = document.createElement('div');
 versionElement.id = 'version';
@@ -105,6 +116,7 @@ let score = 0;
 let gravity = 0.004;
 let velocity = 0;
 let isGameOver = false;
+let isGameStarted = false; // New variable to track if game has started
 let pipeSpeed = 0.05; // Base pipe speed
 let currentLevel = 0; // Track current level for speed increases
 let isFlapping = false; // Track wing animation
@@ -359,13 +371,14 @@ function updateScoreDisplay() {
 // Handle key press
 function onKeyDown(event) {
     if (event.code === 'Space') {
-        if (isGameOver) {
+        event.preventDefault();
+        if (!isGameStarted) {
+            startGame();
+        } else if (isGameOver) {
             resetGame();
         } else {
             velocity = 0.1;
-            // Increase immediate upward rotation when flapping
             bird.rotation.z = 2;
-            // Animate wings without TWEEN
             if (!isFlapping) {
                 flapWings();
             }
@@ -406,11 +419,13 @@ function onWindowResize() {
 // Handle touch events
 function onTouch(event) {
     event.preventDefault();
-    if (isGameOver) {
+    if (!isGameStarted) {
+        startGame();
+    } else if (isGameOver) {
         resetGame();
     } else {
-        velocity = 0.12; // Slightly reduced jump height for better mobile control
-        bird.rotation.z = Math.PI / 4; // Reduced rotation angle
+        velocity = 0.12;
+        bird.rotation.z = Math.PI / 4;
         if (!isFlapping) {
             flapWings();
         }
@@ -448,17 +463,23 @@ function createInitialPipes() {
 
 // Update game state
 function update() {
+    if (!isGameStarted) {
+        // Keep bird floating in place before game starts
+        bird.position.y = Math.sin(Date.now() * 0.003) * 0.2;
+        return;
+    }
+    
     if (isGameOver) return;
 
     // More dynamic rotation based on velocity
     const targetRotation = velocity > 0 
-        ? THREE.MathUtils.lerp(0, Math.PI / 3, velocity * 8) // Steeper upward (60 degrees)
-        : THREE.MathUtils.lerp(0, -Math.PI / 3, -velocity * 6); // Steeper downward (-60 degrees)
+        ? THREE.MathUtils.lerp(0, Math.PI / 3, velocity * 8)
+        : THREE.MathUtils.lerp(0, -Math.PI / 3, -velocity * 6);
 
     bird.rotation.z = THREE.MathUtils.lerp(
         bird.rotation.z,
         targetRotation,
-        0.2 // Faster rotation transition
+        0.2
     );
 
     // Update bird position
@@ -471,8 +492,8 @@ function update() {
         return;
     }
 
-    // Update pipes
-    if (pipes.length > 0 && pipes[pipes.length - 1].top.position.x < 7) { // Adjusted trigger for new pipes
+    // Update pipes only if game has started
+    if (pipes.length > 0 && pipes[pipes.length - 1].top.position.x < 7) {
         createPipes();
     }
 
@@ -480,28 +501,21 @@ function update() {
         pipe.top.position.x -= pipeSpeed;
         pipe.bottom.position.x -= pipeSpeed;
 
-        // Check collision
         if (checkCollision(bird, pipe.top) || checkCollision(bird, pipe.bottom)) {
             gameOver();
             return;
         }
 
-        // Update score
         if (!pipe.scored && pipe.top.position.x < bird.position.x) {
             score++;
-            
-            // Check for level up (every 10 points)
             if (score % 10 === 0) {
                 currentLevel = Math.floor(score / 10);
                 pipeSpeed = 0.05 + (currentLevel * 0.01);
-                console.log(`Level up! Speed increased to ${pipeSpeed}`);
             }
-            
             updateScoreDisplay();
             pipe.scored = true;
         }
 
-        // Remove pipes that are off screen (much further left)
         if (pipe.top.position.x < -15) {
             scene.remove(pipe.top);
             scene.remove(pipe.bottom);
@@ -553,12 +567,13 @@ function resetGame() {
     isGameOver = false;
     score = 0;
     currentLevel = 0;
-    pipeSpeed = 0.05; // Reset pipe speed
+    pipeSpeed = 0.05;
     updateScoreDisplay();
-    document.getElementById('gameOver').style.display = 'none';
+    gameOverElement.style.display = 'none';
     
     // Reset bird position and velocity
-    bird.position.set(-4, 0, 0);
+    bird.position.set(BIRD_CONSTANTS.SPRITE_POSITION.x, 0, 0);
+    bird.rotation.z = 0;
     velocity = 0;
     
     // Remove all pipes
@@ -568,8 +583,21 @@ function resetGame() {
     });
     pipes = [];
     
-    // Create new pipes
-    createInitialPipes();
+    // Show start dialog again
+    startDialogElement.style.display = 'block';
+    scoreElement.style.opacity = '0';
+    isGameStarted = false;
+}
+
+// Start game function
+function startGame() {
+    if (!isGameStarted) {
+        isGameStarted = true;
+        startDialogElement.style.display = 'none';
+        scoreElement.style.opacity = '1';
+        velocity = 0.1; // Initial upward velocity
+        createInitialPipes();
+    }
 }
 
 // Animation loop
